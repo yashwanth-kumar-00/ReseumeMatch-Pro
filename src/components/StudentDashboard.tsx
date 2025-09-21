@@ -1,51 +1,68 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, CheckCircle, Clock, AlertCircle, TrendingUp, Award } from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  Clock,
+  Loader2,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const mockApplications = [
-  {
-    id: 1,
-    jobTitle: "Software Engineer Intern",
-    company: "TechCorp Inc.",
-    status: "Processed",
-    relevanceScore: 85,
-    fitVerdict: "High",
-    submittedDate: "2024-01-15",
-    feedback: ["Strong programming skills", "Relevant project experience", "Consider adding cloud certifications"]
-  },
-  {
-    id: 2,
-    jobTitle: "Data Analyst",
-    company: "DataFlow Solutions",
-    status: "Pending",
-    relevanceScore: 72,
-    fitVerdict: "Medium",
-    submittedDate: "2024-01-18",
-    feedback: ["Good analytical background", "Add SQL certifications", "Include more visualization projects"]
-  },
-  {
-    id: 3,
-    jobTitle: "Frontend Developer",
-    company: "WebDesign Pro",
-    status: "Processed",
-    relevanceScore: 91,
-    fitVerdict: "High",
-    submittedDate: "2024-01-20",
-    feedback: ["Excellent React skills", "Strong portfolio", "Perfect match for role requirements"]
-  }
-];
+// --- Backend response type for a resume ---
+interface Resume {
+  id: number;
+  filename: string;
+  text: string;
+  created_at: string;
+}
 
 export const StudentDashboard = () => {
-  const [dragActive, setDragActive] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [applications, setApplications] = useState<Resume[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const { toast } = useToast();
 
+  // --- Fetch resumes from backend on load ---
+  useEffect(() => {
+    const fetchApplications = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/upload/resumes");
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data = await response.json();
+        setApplications(data);
+      } catch (error) {
+        console.error("Failed to fetch applications:", error);
+        toast({
+          title: "Error",
+          description: "Could not load your resumes.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchApplications();
+  }, [toast]);
+
+  // --- Drag & Drop handlers ---
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -56,263 +73,181 @@ export const StudentDashboard = () => {
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleResumeDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
+      setResumeFile(e.dataTransfer.files[0]);
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    if (!file.type.includes('pdf') && !file.type.includes('docx')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a PDF or DOCX file",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  // --- Upload resume to backend ---
+  const handleFileUpload = async (resume: File) => {
     setIsUploading(true);
-    setUploadProgress(0);
+    const formData = new FormData();
+    formData.append("file", resume);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          toast({
-            title: "Resume uploaded successfully!",
-            description: "Your resume is being processed and will be ready shortly.",
-          });
-          return 100;
-        }
-        return prev + 10;
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/upload/resume", {
+        method: "POST",
+        body: formData,
       });
-    }, 200);
-  };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Processed":
-        return <CheckCircle className="w-4 h-4 text-success" />;
-      case "Pending":
-        return <Clock className="w-4 h-4 text-warning" />;
-      default:
-        return <AlertCircle className="w-4 h-4 text-muted-foreground" />;
+      if (!response.ok) throw new Error("Upload failed");
+
+      const newApplication = await response.json();
+      setApplications((prev) => [newApplication, ...prev]);
+      setResumeFile(null);
+      toast({
+        title: "Upload Complete!",
+        description: "Your resume has been saved.",
+      });
+    } catch (error) {
+      console.error("File upload error:", error);
+      toast({
+        title: "Upload Failed",
+        description: "Could not upload your resume.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-success";
-    if (score >= 60) return "text-warning";
-    return "text-destructive";
-  };
-
-  const getScoreBadgeClass = (verdict: string) => {
-    switch (verdict) {
-      case "High":
-        return "status-high";
-      case "Medium":
-        return "status-medium";
-      case "Low":
-        return "status-low";
-      default:
-        return "";
-    }
+  // --- Helper for status icon ---
+  const getStatusIcon = (id: number) => {
+    return id ? (
+      <CheckCircle className="w-4 h-4 text-green-500" />
+    ) : (
+      <Clock className="w-4 h-4 text-yellow-500" />
+    );
   };
 
   return (
     <div className="container mx-auto px-6 py-8">
-      <div className="mb-8 animate-fade-in">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Student Dashboard</h1>
-        <p className="text-muted-foreground">Track your applications and improve your resume with AI-powered insights</p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Student Dashboard</h1>
+        <p className="text-muted-foreground">
+          Upload and track your resumes with AI-powered insights
+        </p>
       </div>
 
       <Tabs defaultValue="upload" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="upload">Upload Resume</TabsTrigger>
-          <TabsTrigger value="applications">My Applications</TabsTrigger>
-          <TabsTrigger value="insights">Improvement Insights</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="upload">New Resume</TabsTrigger>
+          <TabsTrigger value="applications">My Resumes</TabsTrigger>
         </TabsList>
 
+        {/* Upload Tab */}
         <TabsContent value="upload" className="space-y-6">
-          <Card className="card-professional animate-slide-up">
+          <Card onDragEnter={handleDrag}>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Upload className="w-5 h-5 text-primary" />
-                <span>Upload Your Resume</span>
+                <Upload />
+                <span>Upload Resume</span>
               </CardTitle>
               <CardDescription>
-                Upload your resume in PDF or DOCX format to get matched with relevant opportunities
+                Drag and drop or select a resume file to save.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div
-                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
-                  dragActive 
-                    ? "border-primary bg-primary/5 scale-105" 
-                    : "border-border hover:border-primary/50 hover:bg-primary/5"
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-16 h-16 bg-gradient-to-r from-primary to-primary-light rounded-full flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      {dragActive ? "Drop your resume here" : "Drag & drop your resume"}
-                    </h3>
-                    <p className="text-muted-foreground mb-4">or click to browse files</p>
-                    <Button variant="outline" className="mb-2">
-                      Choose File
-                    </Button>
-                    <p className="text-sm text-muted-foreground">Supports PDF and DOCX files up to 10MB</p>
-                  </div>
+            <CardContent className="space-y-6">
+              <div>
+                <div
+                  className={`mt-2 relative border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                    dragActive ? "border-primary bg-primary/5 scale-105" : "border-border"
+                  } ${resumeFile ? "border-green-500 bg-green-500/5" : ""}`}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleResumeDrop}
+                >
+                  <FileText className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                  <p className="font-semibold">
+                    {resumeFile ? resumeFile.name : "Drag & drop resume here"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    or click to select a file
+                  </p>
+                  <input
+                    type="file"
+                    className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                    accept=".pdf,.docx,.txt"
+                    onChange={(e) =>
+                      e.target.files && setResumeFile(e.target.files[0])
+                    }
+                  />
                 </div>
               </div>
-
-              {isUploading && (
-                <div className="mt-6 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Uploading resume...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <Progress value={uploadProgress} className="h-2" />
-                </div>
-              )}
+              <div>
+                <Button
+                  className="w-full"
+                  disabled={!resumeFile || isUploading}
+                  onClick={() => {
+                    if (resumeFile) {
+                      handleFileUpload(resumeFile);
+                    }
+                  }}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...
+                    </>
+                  ) : (
+                    "Upload Resume"
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Applications Tab */}
         <TabsContent value="applications" className="space-y-6">
-          <div className="grid gap-6">
-            {mockApplications.map((application) => (
-              <Card key={application.id} className="card-professional card-hover animate-scale-in">
+          {isLoading ? (
+            <div className="flex justify-center p-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : applications.length > 0 ? (
+            applications.map((app) => (
+              <Card key={app.id}>
                 <CardHeader>
-                  <div className="flex items-start justify-between">
+                  <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-xl">{application.jobTitle}</CardTitle>
-                      <CardDescription className="text-lg">{application.company}</CardDescription>
+                      <CardTitle>{app.filename}</CardTitle>
+                      <CardDescription>ID: {app.id}</CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {getStatusIcon(application.status)}
-                      <Badge variant="outline">{application.status}</Badge>
+                      {getStatusIcon(app.id)}
+                      <Badge variant="outline">Saved</Badge>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-3 gap-6">
+                  <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Relevance Score</h4>
-                      <div className={`text-3xl font-bold ${getScoreColor(application.relevanceScore)}`}>
-                        {application.relevanceScore}%
-                      </div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                        Created At
+                      </h4>
+                      <p>{new Date(app.created_at).toLocaleDateString()}</p>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Fit Verdict</h4>
-                      <Badge className={getScoreBadgeClass(application.fitVerdict)}>
-                        {application.fitVerdict} Suitability
-                      </Badge>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Submitted</h4>
-                      <p className="text-sm">{application.submittedDate}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-3">AI Feedback</h4>
-                    <div className="space-y-2">
-                      {application.feedback.map((feedback, index) => (
-                        <div key={index} className="flex items-start space-x-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
-                          <span>{feedback}</span>
-                        </div>
-                      ))}
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                        Preview
+                      </h4>
+                      <p className="text-sm line-clamp-3">{app.text}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="insights" className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="card-professional animate-scale-in">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  <span>Skills to Improve</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">Cloud Technologies</span>
-                      <span className="text-sm text-muted-foreground">60%</span>
-                    </div>
-                    <Progress value={60} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">Machine Learning</span>
-                      <span className="text-sm text-muted-foreground">45%</span>
-                    </div>
-                    <Progress value={45} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">DevOps</span>
-                      <span className="text-sm text-muted-foreground">35%</span>
-                    </div>
-                    <Progress value={35} className="h-2" />
-                  </div>
-                </div>
-              </CardContent>
+            ))
+          ) : (
+            <Card className="text-center p-12">
+              <h3 className="text-xl font-semibold">No Resumes Found</h3>
+              <p className="text-muted-foreground mt-2">
+                Upload a resume to get started!
+              </p>
             </Card>
-
-            <Card className="card-professional animate-scale-in" style={{ animationDelay: '0.1s' }}>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Award className="w-5 h-5 text-success" />
-                  <span>Recommended Certifications</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-success/5 rounded-lg border border-success/20">
-                    <span className="font-medium">AWS Cloud Practitioner</span>
-                    <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                      High Priority
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-warning/5 rounded-lg border border-warning/20">
-                    <span className="font-medium">Google Data Analytics</span>
-                    <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                      Medium Priority
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border">
-                    <span className="font-medium">Docker Certified Associate</span>
-                    <Badge variant="outline">
-                      Low Priority
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

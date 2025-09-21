@@ -22,88 +22,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 const mockJobDescriptions = [
-  {
-    id: 1,
-    title: "Senior Software Engineer",
-    department: "Engineering",
-    applicants: 24,
-    status: "Active",
-    uploadDate: "2024-01-20"
-  },
-  {
-    id: 2,
-    title: "Data Scientist",
-    department: "Analytics",
-    applicants: 18,
-    status: "Active",
-    uploadDate: "2024-01-18"
-  },
-  {
-    id: 3,
-    title: "Frontend Developer",
-    department: "Engineering",
-    applicants: 31,
-    status: "Paused",
-    uploadDate: "2024-01-15"
-  }
+
 ];
 
 const mockCandidates = [
-  {
-    id: 1,
-    name: "Alex Johnson",
-    jobTitle: "Senior Software Engineer",
-    relevanceScore: 92,
-    fitVerdict: "High",
-    missingSkills: ["Kubernetes", "GraphQL"],
-    submittedDate: "2024-01-22",
-    university: "MIT",
-    gpa: "3.8"
-  },
-  {
-    id: 2,
-    name: "Sarah Chen",
-    jobTitle: "Senior Software Engineer",
-    relevanceScore: 87,
-    fitVerdict: "High",
-    missingSkills: ["Docker", "AWS Lambda"],
-    submittedDate: "2024-01-21",
-    university: "Stanford",
-    gpa: "3.9"
-  },
-  {
-    id: 3,
-    name: "Michael Rodriguez",
-    jobTitle: "Senior Software Engineer",
-    relevanceScore: 73,
-    fitVerdict: "Medium",
-    missingSkills: ["React Native", "TypeScript", "MongoDB"],
-    submittedDate: "2024-01-20",
-    university: "UC Berkeley",
-    gpa: "3.6"
-  },
-  {
-    id: 4,
-    name: "Emily Wang",
-    jobTitle: "Senior Software Engineer",
-    relevanceScore: 68,
-    fitVerdict: "Medium",
-    missingSkills: ["Node.js", "PostgreSQL", "Redis"],
-    submittedDate: "2024-01-19",
-    university: "Carnegie Mellon",
-    gpa: "3.7"
-  },
-  {
-    id: 5,
-    name: "David Kim",
-    jobTitle: "Senior Software Engineer",
-    relevanceScore: 58,
-    fitVerdict: "Low",
-    missingSkills: ["Python", "Machine Learning", "AWS", "Jenkins"],
-    submittedDate: "2024-01-18",
-    university: "Georgia Tech",
-    gpa: "3.4"
-  }
+ 
 ];
 
 export const RecruiterDashboard = () => {
@@ -180,7 +103,7 @@ export const RecruiterDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active Jobs</p>
-                <p className="text-3xl font-bold text-primary">12</p>
+                <p className="text-3xl font-bold text-primary"></p>
               </div>
               <FileText className="w-8 h-8 text-primary" />
             </div>
@@ -192,7 +115,7 @@ export const RecruiterDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Applicants</p>
-                <p className="text-3xl font-bold text-success">248</p>
+                <p className="text-3xl font-bold text-success"></p>
               </div>
               <Users className="w-8 h-8 text-success" />
             </div>
@@ -204,7 +127,7 @@ export const RecruiterDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">High Matches</p>
-                <p className="text-3xl font-bold text-warning">47</p>
+                <p className="text-3xl font-bold text-warning"></p>
               </div>
               <Target className="w-8 h-8 text-warning" />
             </div>
@@ -216,7 +139,7 @@ export const RecruiterDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Avg. Match Time</p>
-                <p className="text-3xl font-bold text-foreground">2.4s</p>
+                <p className="text-3xl font-bold text-foreground"></p>
               </div>
               <Clock className="w-8 h-8 text-foreground" />
             </div>
@@ -470,60 +393,7 @@ export const RecruiterDashboard = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="card-professional animate-scale-in">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  <span>Match Quality Trends</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">High Quality Matches</span>
-                    <span className="text-sm font-medium">↑ 24%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Average Processing Time</span>
-                    <span className="text-sm font-medium">↓ 15%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Candidate Satisfaction</span>
-                    <span className="text-sm font-medium">↑ 8%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="card-professional animate-scale-in" style={{ animationDelay: '0.1s' }}>
-              <CardHeader>
-                <CardTitle>Top Skills in Demand</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm">React/JavaScript</span>
-                    <span className="text-sm font-medium">89%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Cloud Technologies</span>
-                    <span className="text-sm font-medium">76%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Data Analysis</span>
-                    <span className="text-sm font-medium">68%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Machine Learning</span>
-                    <span className="text-sm font-medium">54%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+       
       </Tabs>
     </div>
   );
